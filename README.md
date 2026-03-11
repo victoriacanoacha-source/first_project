@@ -22,6 +22,24 @@ The project integrates data from several sources:
 
 4. War Economic & Livelihood Impact dataset, which captures the economic and social effects of major conflicts, including GDP changes and food insecurity rates.
 
+## Variables 
+
+1. Country: The name of the country for which the data is recorded. Each observation corresponds to a specific country.
+
+2. Year: The year in which the data was recorded. The dataset includes observations for the years 1990, 1995, 2000, 2005, and 2010, allowing analysis of trends over time.
+
+3. Religions (christianity, judaism, islam, buddhism, hindu, shinto, confus_tao): These variables represent the population counts of the seven largest global religions within each country for a given year. They indicate how many people in a country identify with each religion at that time.
+
+4. GDP: Gross Domestic Product per capita for each country and year. This measures the average economic output per person, providing an indicator of a country's level of economic development.
+
+5. UN Region: The regional classification of countries according to the United Nations geographic grouping system. Examples include Africa, Asia, Europe, Latin America and the Caribbean, Northern America, and Oceania.
+
+6. Conflict Present: A binary variable indicating whether a country is involved in an armed conflict in a given year. A conflict is defined as a situation where a specified number of people have died due to organized violence, and it includes the country where the conflict is occurring.
+
+7. HDI (Human Development Index): A composite index measuring a country’s level of human development based on life expectancy, education, and income. It provides a broader indicator of societal development beyond economic measures alone.
+
+8. Population: The total population of a country in a given year. This variable represents the total number of people living in the country and is used to contextualize the size of religious populations and calculate religious share.
+
 
 ## Data Cleaning, Transformation, Integration
 
