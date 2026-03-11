@@ -7,11 +7,13 @@ import statsmodels.formula.api as smf
 # CONFIG
 # =========================================================
 
+# Column names expected in the source files
 COL_JME_COUNTRY = "Country"
 COL_HDI_COUNTRY = "country"
-COL_JME_REGION = "UN Region"   # change here if needed
+COL_JME_REGION = "UN Region"
 
-HDI_YEARS = [
+# HDI columns originally available in worldhdi.xlsx
+BASE_HDI_YEARS = [
     "hdi_1990",
     "hdi_2000",
     "hdi_2010",
@@ -22,6 +24,16 @@ HDI_YEARS = [
     "hdi_2022"
 ]
 
+# Extra HDR yearly files that were added later in the project
+# Expected filenames: hdr-data_YYYY.xlsx
+EXTRA_YEARS = [
+    1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
+    2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+    2011, 2012, 2013, 2014,
+    2016, 2017, 2018
+]
+
+# Columns that are not needed in the cleaned base HDI dataset
 COLS_TO_DROP = [
     "rank_change_2015_2022",
     "avg_growth_1990_2000",
@@ -31,6 +43,9 @@ COLS_TO_DROP = [
     "iso3c"
 ]
 
+# Country name harmonization map:
+# these names appear in some HDR files and need to be aligned
+# with the names already accepted in the cleaned HDI dataset
 COUNTRY_RENAME_MAP = {
     "Türkiye": "Turkey",
     "Eswatini (Kingdom of)": "Swaziland",
@@ -43,6 +58,7 @@ COUNTRY_RENAME_MAP = {
     "North Macedonia": "The former Yugoslav Republic of Macedonia"
 }
 
+# Rows that are not countries and must be removed from HDI files
 NON_COUNTRY_VALUES = {
     "Very high human development",
     "High human development",
@@ -64,12 +80,12 @@ NON_COUNTRY_VALUES = {
 
 
 # =========================================================
-# HELPERS
+# HELPER FUNCTIONS
 # =========================================================
 
 def clean_column_names(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Standardize column names by stripping leading/trailing spaces.
+    Standardize column names by removing leading/trailing spaces.
     """
     df = df.copy()
     df.columns = df.columns.str.strip()
@@ -78,18 +94,20 @@ def clean_column_names(df: pd.DataFrame) -> pd.DataFrame:
 
 def standardize_text_column(df: pd.DataFrame, col: str) -> pd.DataFrame:
     """
-    Standardize a text column by converting to string, stripping spaces,
-    replacing textual 'nan', and restoring real missing values.
+    Standardize a text column:
+    - convert to string
+    - strip spaces
+    - replace textual 'nan' with real missing values
     """
     df = df.copy()
-    df[col] = df[col].astype("string").str.strip()
+    df[col] = df[col].astype(str).str.strip()
     df[col] = df[col].replace("nan", pd.NA)
     return df
 
 
 def drop_unwanted_hdi_columns(df_hdi: pd.DataFrame) -> pd.DataFrame:
     """
-    Remove HDI columns that are not required for the analysis.
+    Remove columns not needed for the final cleaned HDI dataset.
     """
     df_hdi = df_hdi.copy()
     existing_cols = [c for c in COLS_TO_DROP if c in df_hdi.columns]
@@ -98,7 +116,7 @@ def drop_unwanted_hdi_columns(df_hdi: pd.DataFrame) -> pd.DataFrame:
 
 def harmonize_hdi_country_names(df_hdi: pd.DataFrame) -> pd.DataFrame:
     """
-    Harmonize HDI country names to match the names used in the JME dataset.
+    Harmonize country names using the predefined replacement dictionary.
     """
     df_hdi = df_hdi.copy()
     df_hdi[COL_HDI_COUNTRY] = df_hdi[COL_HDI_COUNTRY].replace(COUNTRY_RENAME_MAP)
@@ -107,7 +125,7 @@ def harmonize_hdi_country_names(df_hdi: pd.DataFrame) -> pd.DataFrame:
 
 def remove_non_country_rows(df_hdi: pd.DataFrame) -> pd.DataFrame:
     """
-    Remove rows that correspond to regions, aggregates, or non-country entities.
+    Remove aggregate rows such as 'World', 'High human development', etc.
     """
     df_hdi = df_hdi.copy()
     return df_hdi[~df_hdi[COL_HDI_COUNTRY].isin(NON_COUNTRY_VALUES)]
@@ -115,8 +133,8 @@ def remove_non_country_rows(df_hdi: pd.DataFrame) -> pd.DataFrame:
 
 def filter_hdi_by_jme_countries(df_hdi: pd.DataFrame, df_jme: pd.DataFrame) -> pd.DataFrame:
     """
-    Keep only countries in the HDI dataset that exist in the JME dataset.
-    JME is used as the reference list of countries.
+    Keep only countries present in the JME dataset.
+    JME is used as the reference list of valid countries.
     """
     df_hdi = df_hdi.copy()
     countries_ref = set(df_jme[COL_JME_COUNTRY].dropna())
@@ -125,7 +143,7 @@ def filter_hdi_by_jme_countries(df_hdi: pd.DataFrame, df_jme: pd.DataFrame) -> p
 
 def add_un_region(df_hdi: pd.DataFrame, df_jme: pd.DataFrame) -> pd.DataFrame:
     """
-    Add the UN region column from JME to the HDI dataset.
+    Add the UN region from JME to the HDI dataset and rename it to 'un_region'.
     """
     df_hdi = df_hdi.copy()
 
@@ -144,7 +162,7 @@ def add_un_region(df_hdi: pd.DataFrame, df_jme: pd.DataFrame) -> pd.DataFrame:
 
 def missing_summary(df: pd.DataFrame, columns: list[str] | None = None) -> pd.DataFrame:
     """
-    Produce a summary table of missing values, including counts and percentages.
+    Produce a missing-values summary table with counts and percentages.
     """
     if columns is None:
         columns = df.columns.tolist()
@@ -163,6 +181,7 @@ def missing_summary(df: pd.DataFrame, columns: list[str] | None = None) -> pd.Da
 def compare_country_sets(df_jme: pd.DataFrame, df_hdi: pd.DataFrame) -> tuple[set, set]:
     """
     Compare country sets between JME and HDI.
+
     Returns:
     - countries present in JME but missing in HDI
     - countries present in HDI but missing in JME
@@ -178,7 +197,8 @@ def compare_country_sets(df_jme: pd.DataFrame, df_hdi: pd.DataFrame) -> tuple[se
 
 def to_long_format(df_hdi_wide: pd.DataFrame) -> pd.DataFrame:
     """
-    Convert the HDI dataset from wide format to long format.
+    Convert a wide HDI dataset into long format.
+
     Output columns:
     - year
     - country
@@ -196,7 +216,7 @@ def to_long_format(df_hdi_wide: pd.DataFrame) -> pd.DataFrame:
         value_name="hdi"
     )
 
-    df_long["year"] = df_long["year"].str.replace("hdi_", "", regex=False).astype(int)
+    df_long["year"] = df_long["year"].str.extract(r"(\d{4})").astype(int)
 
     df_long = df_long[["year", "country", "un_region", "hdi"]]
     df_long = df_long.sort_values(["year", "country"]).reset_index(drop=True)
@@ -205,65 +225,65 @@ def to_long_format(df_hdi_wide: pd.DataFrame) -> pd.DataFrame:
 
 
 # =========================================================
-# CLEANING PIPELINE
+# BASE CLEANING PIPELINE
 # =========================================================
 
 def clean_hdi_with_jme_reference(df_jme: pd.DataFrame, df_hdi: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     """
-    Main cleaning pipeline:
+    Clean the original worldhdi.xlsx dataset and align it with JME.
+
+    Steps:
     1) clean column names
     2) standardize country text columns
-    3) remove missing country rows
-    4) remove unwanted HDI columns
-    5) harmonize HDI country names
+    3) remove rows with missing country names
+    4) drop columns not needed
+    5) harmonize country names
     6) remove non-country rows
-    7) filter HDI using JME countries as reference
+    7) filter by JME reference countries
     8) add un_region from JME
-    9) return cleaned dataframe + diagnostics
+    9) return cleaned dataset + diagnostics
     """
     df_jme = df_jme.copy()
     df_hdi = df_hdi.copy()
 
-    # Clean column names
+    # Clean column names in both datasets
     df_jme = clean_column_names(df_jme)
     df_hdi = clean_column_names(df_hdi)
 
-    # Standardize key text columns
+    # Standardize the country columns
     df_jme = standardize_text_column(df_jme, COL_JME_COUNTRY)
     df_hdi = standardize_text_column(df_hdi, COL_HDI_COUNTRY)
 
-    # Drop rows with missing country names
+    # Drop rows where country is missing
     df_jme = df_jme.dropna(subset=[COL_JME_COUNTRY])
     df_hdi = df_hdi.dropna(subset=[COL_HDI_COUNTRY])
 
-    # Clean HDI dataset
+    # Clean the HDI dataset
     df_hdi = drop_unwanted_hdi_columns(df_hdi)
     df_hdi = harmonize_hdi_country_names(df_hdi)
     df_hdi = remove_non_country_rows(df_hdi)
 
-    # Diagnostics before final filter
+    # Diagnostics before country filtering
     missing_before_filter = compare_country_sets(df_jme, df_hdi)
 
-    # Filter HDI using JME as country reference
+    # Keep only countries valid in JME
     df_hdi_clean = filter_hdi_by_jme_countries(df_hdi, df_jme)
 
-    # Add UN region from JME
+    # Add region information
     df_hdi_clean = add_un_region(df_hdi_clean, df_jme)
 
-    # Reorder columns: country, un_region, then the rest
+    # Reorder columns so country and region come first
     ordered_cols = ["country", "un_region"] + [
         c for c in df_hdi_clean.columns if c not in ["country", "un_region"]
     ]
     df_hdi_clean = df_hdi_clean[ordered_cols]
 
-    # Diagnostics after final filter
+    # Diagnostics after country filtering
     missing_after_filter = compare_country_sets(df_jme, df_hdi_clean)
 
-    diagnostic_cols = [c for c in HDI_YEARS if c in df_hdi_clean.columns]
+    diagnostic_cols = [c for c in BASE_HDI_YEARS if c in df_hdi_clean.columns]
     if "hdi_rank" in df_hdi_clean.columns:
         diagnostic_cols.append("hdi_rank")
-    if "avg_growth_1990_2022" in df_hdi_clean.columns:
-        diagnostic_cols.append("avg_growth_1990_2022")
 
     diagnostics = {
         "jme_shape": df_jme.shape,
@@ -280,47 +300,154 @@ def clean_hdi_with_jme_reference(df_jme: pd.DataFrame, df_hdi: pd.DataFrame) -> 
 
 
 # =========================================================
-# IMPUTATION PIPELINE
+# EXTRA HDR YEARS INTEGRATION PIPELINE
 # =========================================================
 
-def impute_hdi(df_hdi_clean: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def build_full_annual_long_dataset(df_hdi_clean: pd.DataFrame, extra_years: list[int]) -> pd.DataFrame:
     """
-    Hierarchical imputation pipeline:
+    Build a complete annual long-format HDI panel by combining:
+    - the cleaned base HDI dataset (wide format)
+    - the additional yearly HDR Excel files (long format after loading)
+
+    Expected extra files:
+    hdr-data_YYYY.xlsx
+
+    Each extra HDR file is expected to contain:
+    - country
+    - value   (which will be renamed to hdi)
+    """
+    # Convert the cleaned base dataset to long format first
+    df_base_long = to_long_format(df_hdi_clean)
+
+    # Collect all additional yearly datasets
+    extra_data = []
+
+    for y in extra_years:
+        file = f"hdr-data_{y}.xlsx"
+
+        # Load the yearly Excel file
+        df = pd.read_excel(file)
+
+        # Standardize column names and country values
+        df = clean_column_names(df)
+        df["country"] = df["country"].astype(str).str.strip()
+
+        # Harmonize country names to match the base dataset
+        df["country"] = df["country"].replace(COUNTRY_RENAME_MAP)
+
+        # Keep only the columns needed from the yearly file
+        # The HDR yearly files use 'value' for HDI
+        df = df[["country", "value"]].rename(columns={"value": "hdi"})
+
+        # Add the year from the filename loop
+        df["year"] = y
+
+        extra_data.append(df)
+
+    # Concatenate all extra yearly files into one dataframe
+    df_extra = pd.concat(extra_data, ignore_index=True)
+
+    # Combine base long HDI values with the yearly additional values
+    df_all = pd.concat([
+        df_base_long[["country", "year", "hdi"]],
+        df_extra[["country", "year", "hdi"]]
+    ], ignore_index=True)
+
+    # Re-attach region information from the cleaned reference dataset
+    df_all = df_all.merge(
+        df_hdi_clean[["country", "un_region"]].drop_duplicates(),
+        on="country",
+        how="left"
+    )
+
+    # Use hdi_clean.csv countries as the final valid country reference
+    countries_ref = set(df_hdi_clean["country"].dropna().unique())
+
+    # Keep rows only for valid countries
+    df_all = df_all[df_all["country"].isin(countries_ref)].copy()
+
+    # Final column order
+    df_all = df_all[["year", "country", "un_region", "hdi"]]
+
+    # Sort for panel analysis
+    df_all = df_all.sort_values(["year", "country"]).reset_index(drop=True)
+
+    return df_all
+
+
+# =========================================================
+# IMPUTATION PIPELINE — LONG DATASET VERSION
+# =========================================================
+
+def impute_hdi_long(df_hdi_long: pd.DataFrame):
+    """
+    Hierarchical imputation pipeline for a long-format HDI dataset.
+
+    Expected input columns:
+    - year
+    - country
+    - un_region
+    - hdi
+
+    Methods:
     1) temporal interpolation / extrapolation by country
     2) panel regression
     3) regional-temporal smoothing
     4) regional mean fallback
 
     Returns:
-    - df_hdi_imputed (wide format)
-    - df_long_imputed (long format, with audit columns)
-    - imputation_audit (only imputed rows)
+    - df_hdi_imputed_wide: imputed dataset in wide format
+    - df_long_imputed: imputed dataset in long format, with audit columns
+    - imputation_audit: only rows where HDI was imputed
     """
-    df_hdi_clean = df_hdi_clean.copy()
+    df_long = df_hdi_long.copy()
 
-    # Identify HDI columns
-    hdi_cols = df_hdi_clean.filter(regex=r"^hdi_\d{4}$").columns.tolist()
+    # -----------------------------------------------------
+    # 0. BASIC CLEANING
+    # -----------------------------------------------------
 
-    # Convert to long format
-    df_long = df_hdi_clean.melt(
-        id_vars=["country", "un_region"],
-        value_vars=hdi_cols,
-        var_name="year",
-        value_name="hdi"
-    )
+    # Standardize column names
+    df_long.columns = df_long.columns.str.strip()
 
-    df_long["year"] = df_long["year"].str.extract(r"(\d{4})").astype(int)
+    # Make sure the required columns are present
+    required_cols = {"year", "country", "un_region", "hdi"}
+    missing_cols = required_cols - set(df_long.columns)
+
+    if missing_cols:
+        raise ValueError(f"Missing required columns: {missing_cols}")
+
+    # Convert string columns to plain Python objects compatible with statsmodels
+    df_long["country"] = df_long["country"].astype(str).str.strip()
+    df_long["un_region"] = df_long["un_region"].astype(str).str.strip()
+
+    # Convert numeric columns safely
+    df_long["year"] = pd.to_numeric(df_long["year"], errors="coerce")
+    df_long["hdi"] = pd.to_numeric(df_long["hdi"], errors="coerce")
+
+    # Drop rows missing country or year
+    df_long = df_long.dropna(subset=["country", "year"]).copy()
+    df_long["year"] = df_long["year"].astype(int)
+
+    # Remove duplicate country-year rows if any
+    df_long = df_long.drop_duplicates(subset=["country", "year"], keep="first")
+
+    # Sort by country and year for interpolation
     df_long = df_long.sort_values(["country", "year"]).reset_index(drop=True)
 
-    # Keep audit fields
+    # -----------------------------------------------------
+    # 1. AUDIT FIELDS
+    # -----------------------------------------------------
+
+    # Keep the original HDI values to identify what was imputed later
     df_long["hdi_original"] = df_long["hdi"]
     df_long["imputed_flag"] = 0
     df_long["imputation_method"] = pd.NA
 
-    # =====================================================
-    # METHOD 1 — TEMPORAL INTERPOLATION / EXTRAPOLATION
-    # =====================================================
+    # -----------------------------------------------------
+    # 2. METHOD 1 — TEMPORAL INTERPOLATION / EXTRAPOLATION
+    # -----------------------------------------------------
 
+    # First try to fill gaps using each country's own time series
     df_long["hdi_temp"] = (
         df_long.groupby("country")["hdi"]
         .transform(lambda x: x.interpolate(limit_direction="both"))
@@ -332,35 +459,52 @@ def impute_hdi(df_hdi_clean: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, 
     df_long.loc[mask_temp, "imputed_flag"] = 1
     df_long.loc[mask_temp, "imputation_method"] = "temporal_interpolation"
 
-    # =====================================================
-    # METHOD 2 — PANEL REGRESSION
-    # =====================================================
+    # -----------------------------------------------------
+    # 3. METHOD 2 — PANEL REGRESSION
+    # -----------------------------------------------------
 
+    # Use the non-missing rows to fit a panel-style regression
     df_model = df_long.dropna(subset=["hdi"]).copy()
 
-    # Countries with all original HDI values missing
+    # Countries with all original HDI values missing should not receive
+    # a country-specific panel estimate
     all_missing_countries = (
         df_long.groupby("country")["hdi_original"]
         .apply(lambda x: x.isna().all())
     )
+
     all_missing_countries = set(all_missing_countries[all_missing_countries].index)
 
+    # Ensure statsmodels-friendly dtypes
+    df_model["country"] = df_model["country"].astype("object")
+    df_model["un_region"] = df_model["un_region"].astype("object")
+    df_model["year"] = pd.to_numeric(df_model["year"], errors="coerce")
+    df_model["hdi"] = pd.to_numeric(df_model["hdi"], errors="coerce")
+
+    # Fit the model
     model = smf.ols(
         "hdi ~ C(country) + C(un_region) + year",
         data=df_model
     ).fit()
 
+    # Predict only rows still missing after temporal interpolation
     mask_panel = df_long["hdi"].isna() & ~df_long["country"].isin(all_missing_countries)
 
     if mask_panel.sum() > 0:
-        df_long.loc[mask_panel, "hdi"] = model.predict(df_long.loc[mask_panel])
+        pred_data = df_long.loc[mask_panel].copy()
+        pred_data["country"] = pred_data["country"].astype("object")
+        pred_data["un_region"] = pred_data["un_region"].astype("object")
+        pred_data["year"] = pd.to_numeric(pred_data["year"], errors="coerce")
+
+        df_long.loc[mask_panel, "hdi"] = model.predict(pred_data)
         df_long.loc[mask_panel, "imputed_flag"] = 1
         df_long.loc[mask_panel, "imputation_method"] = "panel_regression"
 
-    # =====================================================
-    # METHOD 3 — REGIONAL-TEMPORAL SMOOTHING
-    # =====================================================
+    # -----------------------------------------------------
+    # 4. METHOD 3 — REGIONAL-TEMPORAL SMOOTHING
+    # -----------------------------------------------------
 
+    # Compute the mean HDI by region and year
     regional_mean = (
         df_long.groupby(["un_region", "year"])["hdi"]
         .mean()
@@ -373,6 +517,7 @@ def impute_hdi(df_hdi_clean: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, 
         how="left"
     )
 
+    # Compute each country's average deviation from its regional mean
     tmp["offset"] = tmp["hdi"] - tmp["regional_mean"]
 
     country_offset = (
@@ -387,10 +532,12 @@ def impute_hdi(df_hdi_clean: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, 
         how="left"
     )
 
+    # Fill remaining gaps using regional mean + country offset
     mask_rts = tmp["hdi"].isna()
 
     tmp.loc[mask_rts, "hdi_fill_rts"] = (
-        tmp.loc[mask_rts, "regional_mean"] + tmp.loc[mask_rts, "country_offset"].fillna(0)
+        tmp.loc[mask_rts, "regional_mean"] +
+        tmp.loc[mask_rts, "country_offset"].fillna(0)
     )
 
     mask_rts_valid = tmp["hdi"].isna() & tmp["hdi_fill_rts"].notna()
@@ -401,10 +548,11 @@ def impute_hdi(df_hdi_clean: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, 
 
     df_long = tmp.copy()
 
-    # =====================================================
-    # METHOD 4 — REGIONAL MEAN FALLBACK
-    # =====================================================
+    # -----------------------------------------------------
+    # 5. METHOD 4 — REGIONAL MEAN FALLBACK
+    # -----------------------------------------------------
 
+    # If anything is still missing, use only the regional mean for that year
     regional_mean_fallback = (
         df_long.groupby(["un_region", "year"])["hdi"]
         .mean()
@@ -423,14 +571,22 @@ def impute_hdi(df_hdi_clean: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, 
     df_long.loc[mask_regional, "imputed_flag"] = 1
     df_long.loc[mask_regional, "imputation_method"] = "regional_mean_fallback"
 
-    # Mark still-missing rows
+    # -----------------------------------------------------
+    # 6. FINAL CLEANING
+    # -----------------------------------------------------
+
+    # Mark rows still missing after all methods
     mask_still_missing = df_long["hdi"].isna()
     df_long.loc[mask_still_missing, "imputation_method"] = "not_imputed"
 
-    # Restrict HDI to valid range
+    # Restrict HDI to the valid [0, 1] range
     df_long["hdi"] = df_long["hdi"].clip(lower=0, upper=1)
 
-    # Create imputation audit table
+    # -----------------------------------------------------
+    # 7. CREATE IMPUTATION AUDIT TABLE
+    # -----------------------------------------------------
+
+    # Keep only the rows where HDI was actually imputed
     imputation_audit = df_long.loc[df_long["imputed_flag"] == 1, [
         "country", "un_region", "year", "hdi_original", "hdi", "imputation_method"
     ]].copy()
@@ -438,76 +594,86 @@ def impute_hdi(df_hdi_clean: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, 
     imputation_audit = imputation_audit.rename(columns={"hdi": "hdi_filled"})
     imputation_audit = imputation_audit.sort_values(["country", "year"]).reset_index(drop=True)
 
-    # Convert back to wide format
-    df_hdi_imputed = df_long.pivot(
+    # -----------------------------------------------------
+    # 8. CONVERT TO WIDE FORMAT
+    # -----------------------------------------------------
+
+    # Convert the imputed long panel back into wide format
+    df_hdi_imputed_wide = df_long.pivot(
         index=["country", "un_region"],
         columns="year",
         values="hdi"
     ).reset_index()
 
-    df_hdi_imputed.columns = [
-        f"hdi_{col}" if isinstance(col, int) else col
-        for col in df_hdi_imputed.columns
+    df_hdi_imputed_wide.columns = [
+        f"hdi_{c}" if isinstance(c, int) else c
+        for c in df_hdi_imputed_wide.columns
     ]
 
-    # Order columns
-    ordered_cols = ["country", "un_region"] + [
-        c for c in HDI_YEARS if c in df_hdi_imputed.columns
-    ]
-    remaining_cols = [c for c in df_hdi_imputed.columns if c not in ordered_cols]
-    df_hdi_imputed = df_hdi_imputed[ordered_cols + remaining_cols]
+    # Order year columns chronologically
+    year_cols = sorted(
+        [c for c in df_hdi_imputed_wide.columns if c.startswith("hdi_")],
+        key=lambda x: int(x.split("_")[1])
+    )
 
-    return df_hdi_imputed, df_long, imputation_audit
+    df_hdi_imputed_wide = df_hdi_imputed_wide[
+        ["country", "un_region"] + year_cols
+    ]
+
+    # -----------------------------------------------------
+    # 9. FINAL ORDERING OF LONG DATASET
+    # -----------------------------------------------------
+
+    df_long = df_long.sort_values(["year", "country"]).reset_index(drop=True)
+
+    return df_hdi_imputed_wide, df_long, imputation_audit
 
 
 # =========================================================
-# USAGE
+# MAIN USAGE
 # =========================================================
 
-# Load raw datasets
+# Load the two original source files
 df_jme = pd.read_excel("JME.xlsx")
 df_hdi = pd.read_excel("worldhdi.xlsx")
 
-# Run cleaning pipeline
+# ---------------------------------------------
+# STEP 1 — CLEAN THE ORIGINAL WIDE HDI DATASET
+# ---------------------------------------------
 df_hdi_clean, diag = clean_hdi_with_jme_reference(df_jme, df_hdi)
 
-# Save cleaned wide dataset
+# Save the cleaned base HDI dataset
 df_hdi_clean.to_csv("hdi_clean.csv", index=False)
 
-# Run imputation pipeline
-df_hdi_imputed, df_long_imputed, imputation_audit = impute_hdi(df_hdi_clean)
+# ---------------------------------------------
+# STEP 2 — BUILD THE FULL ANNUAL LONG DATASET
+# ---------------------------------------------
+df_all = build_full_annual_long_dataset(df_hdi_clean, EXTRA_YEARS)
 
-# Save imputed wide dataset
-df_hdi_imputed.to_csv("hdi_imputed.csv", index=False)
+# Save the long dataset before imputation
+df_all.to_csv("hdi_long_full_pre_imputation.csv", index=False)
 
-# Convert imputed wide dataset to final long format
-df_hdi_long = to_long_format(df_hdi_imputed)
-
-# Save long-format dataset
-df_hdi_long.to_csv("hdi_long.csv", index=False)
-
-# Save audit file
-imputation_audit.to_csv("hdi_imputation_audit.csv", index=False)
-
-# Diagnostics
-print("Final cleaned HDI shape:", df_hdi_clean.shape)
-print("\nMissing values summary before imputation:")
-print(diag["missing_summary"])
-
-print("\nCountries present in JME but missing in HDI after filtering:")
-print(sorted(diag["countries_in_jme_not_in_hdi_after_filter"]))
-
-print("\nCountries without UN region:")
-print(diag["countries_without_region"])
-
-print("\nImputed HDI shape:", df_hdi_imputed.shape)
-print("Remaining missing values after imputation:", df_long_imputed["hdi"].isna().sum())
-
-print("\nImputation method counts:")
-print(df_long_imputed["imputation_method"].value_counts(dropna=False))
-
-print("\nLong-format HDI shape:", df_hdi_long.shape)
-print("\nPreview of hdi_long:")
-print(df_hdi_long.head())
+# ---------------------------------------------
+# STEP 3 — IMPUTE MISSING HDI VALUES
+# ---------------------------------------------
+df_hdi_imputed, df_long_imputed, imputation_audit = impute_hdi_long(df_all)
 
 
+# ---------------------------------------------
+# STEP 4 — CREATE FINAL ANALYSIS DATASET
+# ---------------------------------------------
+
+# Remove technical columns used only for auditing the imputation
+df_long_final = df_long_imputed.drop(
+    columns=["imputed_flag", "imputation_method"],
+    errors="ignore"
+).copy()
+
+# Round HDI values to two decimal places for presentation and analysis
+df_long_final["hdi"] = df_long_final["hdi"].round(2)
+
+# Reorder columns for clarity
+df_long_final = df_long_final[["year", "country", "un_region", "hdi"]]
+
+# Save the final dataset used for analysis
+df_long_final.to_csv("hdi_long_final.csv", index=False)
