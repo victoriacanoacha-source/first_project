@@ -129,7 +129,7 @@ Dataset Challenges and Solutions
 **Challenge 1**: Limited time coverage in the religious population dataset
 The religious population dataset only contained observed data up to 2010, while the project analyzes relationships between religion, economic development, and societal factors in more recent years.
 
-**Solution 1**: Additional datasets were explored to identify sources that contained non-projected religious population data for years beyond 2010. Preference was given to datasets with observed values rather than projections, as projected values could introduce additional uncertainty into the analysis. Ultimately, we decided using a time coverage that overlapped between all datasets (1990-2010)
+- **Solution 1**: Additional datasets were explored to identify sources that contained non-projected religious population data for years beyond 2010. Preference was given to datasets with observed values rather than projections, as projected values could introduce additional uncertainty into the analysis. Ultimately, we decided using a time coverage that overlapped between all datasets (1990-2010)
 
 
 
@@ -137,7 +137,7 @@ The religious population dataset only contained observed data up to 2010, while 
 
 **Challenge 2**: Mismatched time ranges between datasets. The Human Development Index (HDI) dataset only contains data up to 2022, while the conflict dataset includes conflicts extending to 2025. Ideally, all datasets would cover the same time range for direct comparison.
 
-**Solution 2**: Instead of restricting all datasets to the same time range, the full conflict dataset was preserved in order to retain broader regional and country coverage. Limiting the conflict dataset to 2022 would have removed several conflicts affecting multiple countries and regions, which would significantly reduce the dataset’s analytical value.
+- **Solution 2**: Instead of restricting all datasets to the same time range, the full conflict dataset was preserved in order to retain broader regional and country coverage. Limiting the conflict dataset to 2022 would have removed several conflicts affecting multiple countries and regions, which would significantly reduce the dataset’s analytical value.
 
 
 
@@ -145,7 +145,7 @@ The religious population dataset only contained observed data up to 2010, while 
 
 **Challenge 3**: Since we used UN's region/country classification and code as a guide to ensure all country names in our datasets were the same to make merging easier, some countries were not included in our study as they were not recognised or included in the UN's country list.  
 
-**Solution 3**:  Countries that were not recognized or included in the UN classification were excluded from the analysis to maintain a consistent and comparable set of country identifiers across all datasets.
+- **Solution 3**:  Countries that were not recognized or included in the UN classification were excluded from the analysis to maintain a consistent and comparable set of country identifiers across all datasets.
 
 
 
@@ -154,7 +154,7 @@ The religious population dataset only contained observed data up to 2010, while 
 **Challenge 4**: Differences in dataset structure and variable naming
 The datasets originated from different sources and used different column names, formats, and country naming conventions, which can create issues during merging.
 
-**Solution 4**: Data cleaning and preprocessing steps were performed to standardize column names, harmonize country identifiers, and ensure consistent formatting across all datasets before merging.
+- **Solution 4**: Data cleaning and preprocessing steps were performed to standardize column names, harmonize country identifiers, and ensure consistent formatting across all datasets before merging.
 
 
 
@@ -162,7 +162,7 @@ The datasets originated from different sources and used different column names, 
 
 **Challenge 5**: Challenge 5: Differences in conflict definitions and dataset coverage. The conflict dataset uses a specific definition of conflict, recording an event only when it results in at least 25 battle-related deaths, which may exclude smaller-scale conflicts captured in other datasets. Additionally, conflicts are attributed only to the country where the fighting occurs, rather than to all countries involved in the conflict. For example, although the United States participated in the Gulf War, it does not appear as a conflict country in years such as 1990 or 1995, since the fighting took place outside its territory. 
 
-**Solution 5**: To address these limitations, we standardized the temporal scope of the analysis to five-year intervals between 1990 and 2010 to ensure consistency across all datasets. While this approach may not capture every conflict event, it allows for a comparable dataset structure across sources. These limitations were acknowledged when interpreting the results, recognising that the dataset may underrepresent certain conflicts or countries indirectly involved in conflicts.
+- **Solution 5**: To address these limitations, we standardized the temporal scope of the analysis to five-year intervals between 1990 and 2010 to ensure consistency across all datasets. While this approach may not capture every conflict event, it allows for a comparable dataset structure across sources. These limitations were acknowledged when interpreting the results, recognising that the dataset may underrepresent certain conflicts or countries indirectly involved in conflicts.
 
 
 
@@ -175,7 +175,7 @@ The datasets originated from different sources and used different column names, 
 
 **Challenge 7**: When analysing the descriptive statistics for religious_share the maximum value was 340%, which is not possible. What we discovered was how for some countries, the religious population (sum of all religion groups) exceeded the countries total population giving a religious share greater than 100% which is not possible.
 
-**Solution 7**: We capped religious share to ensure religious population could not exceed country population 
+- **Solution 7**: We capped religious share to ensure religious population could not exceed country population 
 
 
 
