@@ -68,7 +68,7 @@ We hope to provide practical applications in areas such as early warning systems
 
 ## Data Cleaning, Transformation, Integration
 
-1. Data Cleaning
+**1. Data Cleaning**
 
 - Each dataset was cleaned individually before integration. The main cleaning steps included:
 
@@ -88,7 +88,7 @@ We hope to provide practical applications in areas such as early warning systems
 
 
 
-2. Data Transformation
+**2. Data Transformation**
 
 Additional transformations were performed to prepare the datasets for merging:
 
@@ -101,7 +101,7 @@ Additional transformations were performed to prepare the datasets for merging:
 - Used UN's region/country classification to ensure all countries and their respective regions followed the same format
 
 
-3. Data Integration
+**3. Data Integration**
 
 The cleaned datasets were merged into a unified dataset using common identifiers:
 
